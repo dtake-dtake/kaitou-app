@@ -313,20 +313,29 @@
             }
         });
 
+        // --- Client側の状態監視部分を修正 ---
         onValue(ref(db, 'state'), (snap) => {
             const st = snap.val() || {};
             const btns = document.querySelectorAll('.vote-btn');
             const msg = document.getElementById('client-msg');
+        
             if (st.status === 'open') {
-                btns.forEach(b => b.disabled = false);
+                // 【修正ポイント】投票スタートになったら、ボタンを活性化し、かつ「選択状態（白い枠）」を全部消す
+                btns.forEach(b => {
+                    b.disabled = false;
+                    b.classList.remove('selected'); // ← ここで白い枠をリセット
+                });
                 msg.innerText = "答えを選んでね！";
-                btns.forEach(b => b.classList.remove('selected'));
-                myLastChoice = 0;
+                myLastChoice = 0; // 内部的な選択記録もリセット
                 document.getElementById('result-overlay').classList.add('hidden');
             } else {
                 btns.forEach(b => b.disabled = true);
                 if(st.status === 'ranking') msg.innerText = "結果発表中...";
-                else if(st.status === 'waiting') msg.innerText = "先生の合図を待ってね";
+                else if(st.status === 'waiting') {
+                    msg.innerText = "先生の合図を待ってね";
+                    // 待機中も選択をリセットしておく
+                    btns.forEach(b => b.classList.remove('selected'));
+                }
                 else msg.innerText = "締め切り！";
             }
         });
@@ -463,3 +472,4 @@
 </script>
 </body>
 </html>
+
