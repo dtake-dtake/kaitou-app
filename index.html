@@ -48,6 +48,18 @@
 
         #client-view { width: 100%; height: 100%; display: flex; flex-direction: column; }
         .status-msg { text-align: center; font-size: 1.5rem; height: 3rem; display: flex; align-items: center; justify-content: center;}
+        
+        /* 結果画面（Client用） */
+        #result-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        .result-text { font-size: 4rem; font-weight: bold; margin-bottom: 20px; }
+        .res-ok { color: #e74c3c; text-shadow: 0 0 10px white; } /* 赤 */
+        .res-ng { color: #3498db; text-shadow: 0 0 10px white; } /* 青 */
+
         .btn-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
             flex-grow: 1; margin-bottom: 10px;
@@ -62,6 +74,7 @@
         .vote-btn.yellow { background-color: var(--btn-yellow); }
         .vote-btn.green { background-color: var(--btn-green); }
         .vote-btn:disabled { opacity: 0.3; filter: grayscale(80%); transform: none; }
+        .vote-btn.selected { border: 5px solid #fff; transform: scale(0.95); opacity: 1 !important; box-shadow: 0 0 15px white;}
 
         /* --- Host --- */
         #host-view { width: 100%; height: 100%; position: relative; }
@@ -105,7 +118,6 @@
         .ans-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; }
         .ans-btn { padding: 15px; font-size: 1.5rem; border: 2px solid white; border-radius: 5px; cursor: pointer; color: #333;}
         
-        /* 音ボタン */
         .sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .sound-btn {
             padding: 20px; font-size: 2rem; border-radius: 10px; border: 2px solid white; cursor: pointer;
@@ -130,17 +142,13 @@
                 <div class="bar-group"><div class="bar green" id="bar-4" style="height:0%"></div><div class="bar-label">4</div></div>
             </div>
             <div style="font-size: 1.5rem;">投票数: <span id="host-votes">0</span></div>
-            <p style="font-size:0.8rem; opacity:0.7;">※音を出すには一度画面をクリックしてください</p>
         </div>
 
         <div id="ranking-screen" class="host-content hidden">
             <h2>🏆 現在のランキング 🏆</h2>
             <ul id="ranking-list"></ul>
         </div>
-
-        <div class="qr-overlay">
-            <div id="qrcode"></div>
-        </div>
+        <div class="qr-overlay"><div id="qrcode"></div></div>
     </div>
 
     <div id="client-view" class="hidden">
@@ -153,14 +161,16 @@
         <div id="vote-screen" class="hidden" style="width:100%; height:100%; display:flex; flex-direction:column;">
             <div class="status-msg" id="client-msg">先生の合図を待ってね</div>
             <div class="btn-grid">
-                <button class="vote-btn red" onclick="submitVote(1)">1</button>
-                <button class="vote-btn blue" onclick="submitVote(2)">2</button>
-                <button class="vote-btn yellow" onclick="submitVote(3)">3</button>
-                <button class="vote-btn green" onclick="submitVote(4)">4</button>
+                <button class="vote-btn red" id="vbtn-1" onclick="submitVote(1)">1</button>
+                <button class="vote-btn blue" id="vbtn-2" onclick="submitVote(2)">2</button>
+                <button class="vote-btn yellow" id="vbtn-3" onclick="submitVote(3)">3</button>
+                <button class="vote-btn green" id="vbtn-4" onclick="submitVote(4)">4</button>
             </div>
-            <div style="text-align:center; font-size:0.9rem; color:#aaa;">
-                name: <span id="disp-name"></span>
-            </div>
+            <div style="text-align:center; font-size:0.9rem; color:#aaa;">name: <span id="disp-name"></span></div>
+        </div>
+        <div id="result-overlay" class="hidden">
+            <div id="res-icon" class="result-text"></div>
+            <div id="res-msg" style="font-size:1.5rem;"></div>
         </div>
     </div>
 
@@ -168,22 +178,20 @@
         <h2>先生リモコン</h2>
         
         <div class="panel">
-            <div>① 効果音（みんなのスマホで鳴る！）</div>
+            <div>① 効果音テスト（全員に鳴ります）</div>
             <div class="sound-grid">
-                <button class="sound-btn sound-ok" onclick="playSfx('pinpon')">⭕ 正解</button>
-                <button class="sound-btn sound-ng" onclick="playSfx('gakkari')">✖ 残念</button>
+                <button class="sound-btn sound-ok" onclick="playSfx('pinpon')">⭕</button>
+                <button class="sound-btn sound-ng" onclick="playSfx('gakkari')">✖</button>
             </div>
         </div>
-
         <div class="panel">
             <div>② 投票コントロール</div>
             <button class="ctrl-btn bg-green" onclick="setGameState('open')">投票スタート</button>
             <button class="ctrl-btn bg-red" onclick="setGameState('closed')">締め切り</button>
         </div>
-        
         <div class="panel">
             <div>③ 正解発表＆集計</div>
-            <p style="margin:5px 0; font-size:0.9rem;">ボタンを押すとランキングが出ます</p>
+            <p style="margin:5px 0; font-size:0.9rem;">ボタンを押すと、正解者にピンポン音が鳴ります</p>
             <div class="ans-grid">
                 <button class="ans-btn" style="background:var(--btn-red);" onclick="calcScore(1)">1</button>
                 <button class="ans-btn" style="background:var(--btn-blue);" onclick="calcScore(2)">2</button>
@@ -191,14 +199,11 @@
                 <button class="ans-btn" style="background:var(--btn-green);" onclick="calcScore(4)">4</button>
             </div>
         </div>
-        
         <div class="panel">
             <div>④ 次の問題へ</div>
             <button class="ctrl-btn bg-blue" onclick="nextQuestion()">次の問題へ（リセット）</button>
         </div>
-        <div class="panel">
-            <button class="ctrl-btn bg-gray" onclick="fullReset()">全員の点数を消去</button>
-        </div>
+        <div class="panel"><button class="ctrl-btn bg-gray" onclick="fullReset()">全員の点数を消去</button></div>
     </div>
 
 </div>
@@ -227,59 +232,80 @@
 
     const params = new URLSearchParams(window.location.search);
     const role = params.get('role') || 'client';
-
     let myId = localStorage.getItem('sankan_uid');
     if (!myId) {
         myId = 'u_' + Date.now() + Math.floor(Math.random()*999);
         localStorage.setItem('sankan_uid', myId);
     }
+    // 自分が最後に選んだ答えを記憶
+    let myLastChoice = 0; 
 
     if (role === 'host') initHost();
     else if (role === 'admin') initAdmin();
     else initClient();
 
     // ==========================================
-    // Client (保護者スマホ)
+    // Client
     // ==========================================
     function initClient() {
         document.getElementById('client-view').classList.remove('hidden');
-        
-        // ★ Client側でも音声を準備
         const sndPinpon = new Audio('./pinpon.mp3');
         const sndGakkari = new Audio('./gakkari.mp3');
 
-        // 音声アンロック用関数 (タップ時に無音再生する)
+        // 音声アンロック
         const unlockAudio = () => {
-            sndPinpon.volume = 0; sndGakkari.volume = 0; // 無音で
+            sndPinpon.volume = 0; sndGakkari.volume = 0; 
             sndPinpon.play().then(() => { sndPinpon.pause(); sndPinpon.currentTime=0; sndPinpon.volume=1; });
             sndGakkari.play().then(() => { sndGakkari.pause(); sndGakkari.currentTime=0; sndGakkari.volume=1; });
         };
-
         const savedName = localStorage.getItem('sankan_name');
         if(savedName) {
-            // 名前がある場合、画面のどこかを触ったタイミングでアンロックする
             document.body.addEventListener('click', unlockAudio, { once: true });
             document.body.addEventListener('touchstart', unlockAudio, { once: true });
             showVoteScreen(savedName);
         }
 
-        // ★ 音声シグナルの監視 (Hostと同じ)
+        // ★★★ 判定ロジック ★★★
         let lastSfxTime = 0;
-        onValue(ref(db, 'state/sfx'), (snap) => {
+        onValue(ref(db, 'state/result'), (snap) => {
             const val = snap.val();
-            // 古いシグナルや、自分がまだアンロックしてない(読み込み直後)場合は無視しないよう注意
-            // ただし、Date.now()と比較して古すぎる音は鳴らさない制御を入れる
+            // 新しい結果発表があり、かつ最近(5秒以内)の場合のみ
             if(val && val.t > lastSfxTime) {
                 lastSfxTime = val.t;
-                // 今から5秒以内の指令のみ実行（リロード時の爆音防止）
                 if(Date.now() - val.t < 5000) {
-                    if(val.type === 'pinpon') {
-                        sndPinpon.currentTime = 0;
-                        sndPinpon.play().catch(e => console.log("Audio blocked: tap first"));
-                    } else if(val.type === 'gakkari') {
-                        sndGakkari.currentTime = 0;
-                        sndGakkari.play().catch(e => console.log("Audio blocked: tap first"));
+                    const overlay = document.getElementById('result-overlay');
+                    const icon = document.getElementById('res-icon');
+                    const txt = document.getElementById('res-msg');
+                    
+                    overlay.classList.remove('hidden');
+                    
+                    if (myLastChoice === val.ans) {
+                        // 正解！
+                        icon.innerHTML = "⭕"; icon.className = "result-text res-ok";
+                        txt.innerText = "せいかい！";
+                        sndPinpon.currentTime = 0; sndPinpon.play();
+                    } else {
+                        // 不正解...
+                        icon.innerHTML = "✖"; icon.className = "result-text res-ng";
+                        txt.innerText = "ざんねん...";
+                        sndGakkari.currentTime = 0; sndGakkari.play();
                     }
+                    
+                    // 3秒後に消す
+                    setTimeout(() => { overlay.classList.add('hidden'); }, 4000);
+                }
+            }
+        });
+
+        // 強制効果音（テスト用）
+        let lastTestTime = 0;
+        onValue(ref(db, 'state/sfx'), (snap) => {
+            const val = snap.val();
+            if(val && val.t > lastTestTime) {
+                lastTestTime = val.t;
+                if(Date.now() - val.t < 5000) {
+                     if(val.type === 'pinpon') { sndPinpon.currentTime=0; sndPinpon.play(); }
+                     else if(val.type === 'gakkari') { sndGakkari.currentTime=0; sndGakkari.play(); }
                 }
             }
         });
@@ -291,6 +317,10 @@
             if (st.status === 'open') {
                 btns.forEach(b => b.disabled = false);
                 msg.innerText = "答えを選んでね！";
+                // 選択状態解除
+                btns.forEach(b => b.classList.remove('selected'));
+                myLastChoice = 0;
+                document.getElementById('result-overlay').classList.add('hidden'); // 結果も消す
             } else {
                 btns.forEach(b => b.disabled = true);
                 if(st.status === 'ranking') msg.innerText = "結果発表中...";
@@ -301,10 +331,7 @@
         window.registerUser = () => {
             const name = document.getElementById('nickname-input').value;
             if(!name) return;
-            
-            // ★ 「参加する」ボタンを押した瞬間に音声をアンロック！
             unlockAudio();
-
             localStorage.setItem('sankan_name', name);
             set(ref(db, 'users/' + myId), { name: name, score: 0 });
             showVoteScreen(name);
@@ -317,36 +344,24 @@
         document.getElementById('disp-name').innerText = name;
         update(ref(db, 'users/' + myId), { name: name });
     }
+    
     window.submitVote = (c) => {
-        document.getElementById('client-msg').innerText = `${c}番を送信したよ！`;
+        myLastChoice = c; // 自分の答えを記憶
+        document.getElementById('client-msg').innerText = `${c}番を選んだよ`;
+        // UI更新（選んだボタンを目立たせる）
+        document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById(`vbtn-${c}`).classList.add('selected');
+        
         set(ref(db, 'votes/' + myId), c);
     };
 
     // ==========================================
-    // Host (黒板)
+    // Host
     // ==========================================
     function initHost() {
         document.getElementById('host-view').classList.remove('hidden');
         const clientUrl = window.location.href.split('?')[0]; 
         new QRCode(document.getElementById("qrcode"), { text: clientUrl, width: 250, height: 250 });
-
-        const sndPinpon = new Audio('./pinpon.mp3');
-        const sndGakkari = new Audio('./gakkari.mp3');
-
-        let lastSfxTime = 0;
-        onValue(ref(db, 'state/sfx'), (snap) => {
-            const val = snap.val();
-            if(val && val.t > lastSfxTime) {
-                lastSfxTime = val.t;
-                if(Date.now() - val.t < 5000) { // 5秒以内
-                    if(val.type === 'pinpon') {
-                        sndPinpon.currentTime = 0; sndPinpon.play().catch(e=>{});
-                    } else if(val.type === 'gakkari') {
-                        sndGakkari.currentTime = 0; sndGakkari.play().catch(e=>{});
-                    }
-                }
-            }
-        });
 
         onValue(ref(db, 'votes'), (snap) => {
             const votes = snap.val() || {};
@@ -396,16 +411,18 @@
     // ==========================================
     function initAdmin() { document.getElementById('admin-view').classList.remove('hidden'); }
     window.setGameState = (st) => { update(ref(db, 'state'), { status: st }); };
-    
-    window.playSfx = (type) => {
-        update(ref(db, 'state/sfx'), { type: type, t: Date.now() });
-    };
+    window.playSfx = (type) => { update(ref(db, 'state/sfx'), { type: type, t: Date.now() }); };
 
     window.calcScore = async (correctAnswer) => {
-        if(!confirm(`正解は【 ${correctAnswer}番 】でいいですか？`)) return;
-        await update(ref(db, 'state'), { status: 'closed' });
-        window.playSfx('pinpon');
+        if(!confirm(`正解は【 ${correctAnswer}番 】ですか？`)) return;
         
+        // 1. 締め切る
+        await update(ref(db, 'state'), { status: 'closed' });
+
+        // 2. 正解発表シグナルを送る（これでClientが一斉に判定＆音出し）
+        await update(ref(db, 'state/result'), { ans: correctAnswer, t: Date.now() });
+
+        // 3. 点数計算
         const votesSnap = await get(ref(db, 'votes'));
         const usersSnap = await get(ref(db, 'users'));
         const votes = votesSnap.val() || {};
@@ -417,6 +434,8 @@
             }
         });
         if(Object.keys(updates).length > 0) await update(ref(db), updates);
+        
+        // 4. 黒板をランキングへ
         await update(ref(db, 'state'), { status: 'ranking' });
     };
     
