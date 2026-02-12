@@ -57,8 +57,8 @@
             z-index: 100;
         }
         .result-text { font-size: 4rem; font-weight: bold; margin-bottom: 20px; }
-        .res-ok { color: #e74c3c; text-shadow: 0 0 10px white; } /* 赤 */
-        .res-ng { color: #3498db; text-shadow: 0 0 10px white; } /* 青 */
+        .res-ok { color: #e74c3c; text-shadow: 0 0 10px white; }
+        .res-ng { color: #3498db; text-shadow: 0 0 10px white; }
 
         .btn-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
@@ -79,9 +79,10 @@
         /* --- Host --- */
         #host-view { width: 100%; height: 100%; position: relative; }
         .host-content { 
-            width: 100%; height: 90%; 
+            width: 100%; height: 100%; 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
+        /* グラフ */
         .graph-container {
             display: flex; justify-content: space-around; align-items: flex-end;
             width: 90%; height: 70%; border-bottom: 3px solid white; margin-bottom: 20px;
@@ -92,6 +93,7 @@
         .bar.yellow { background: var(--btn-yellow); } .bar.green { background: var(--btn-green); }
         .bar-label { font-size: 2rem; margin-top: 10px; }
         
+        /* ランキング */
         #ranking-list { list-style: none; padding: 0; width: 80%; }
         .rank-item {
             font-size: 2.5rem; border-bottom: 1px dashed rgba(255,255,255,0.5);
@@ -99,10 +101,11 @@
         }
         .rank-icon { margin-right: 15px; color: gold; }
 
-        .qr-overlay {
-            position: absolute; bottom: 30px; right: 30px;
-            background: white; padding: 15px; border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        /* QRコード専用画面 */
+        #screen-qr { text-align: center; }
+        #qrcode-box { 
+            background: white; padding: 20px; border-radius: 15px; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); margin-top: 20px;
         }
 
         /* --- Admin --- */
@@ -132,9 +135,18 @@
 <div class="board-frame">
 
     <div id="host-view" class="hidden">
-        <h1 id="host-title">みんなの答え</h1>
         
-        <div id="graph-screen" class="host-content">
+        <div id="screen-qr" class="host-content hidden">
+            <h1>スマートフォンで参加してね！</h1>
+            <div id="qrcode-box">
+                <div id="qrcode"></div>
+            </div>
+            <p style="margin-top:20px; font-size:1.5rem;">読み込むとクイズに参加できます</p>
+            <p style="font-size:0.8rem; opacity:0.7; margin-top:50px;">※画面クリックで音出しON</p>
+        </div>
+
+        <div id="screen-graph" class="host-content hidden">
+            <h1>みんなの答え</h1>
             <div class="graph-container">
                 <div class="bar-group"><div class="bar red" id="bar-1" style="height:0%"></div><div class="bar-label">1</div></div>
                 <div class="bar-group"><div class="bar blue" id="bar-2" style="height:0%"></div><div class="bar-label">2</div></div>
@@ -144,11 +156,10 @@
             <div style="font-size: 1.5rem;">投票数: <span id="host-votes">0</span></div>
         </div>
 
-        <div id="ranking-screen" class="host-content hidden">
+        <div id="screen-ranking" class="host-content hidden">
             <h2>🏆 現在のランキング 🏆</h2>
             <ul id="ranking-list"></ul>
         </div>
-        <div class="qr-overlay"><div id="qrcode"></div></div>
     </div>
 
     <div id="client-view" class="hidden">
@@ -178,7 +189,7 @@
         <h2>先生リモコン</h2>
         
         <div class="panel">
-            <div>① 効果音テスト（全員に鳴ります）</div>
+            <div>① 効果音テスト</div>
             <div class="sound-grid">
                 <button class="sound-btn sound-ok" onclick="playSfx('pinpon')">⭕</button>
                 <button class="sound-btn sound-ng" onclick="playSfx('gakkari')">✖</button>
@@ -200,8 +211,8 @@
             </div>
         </div>
         <div class="panel">
-            <div>④ 次の問題へ</div>
-            <button class="ctrl-btn bg-blue" onclick="nextQuestion()">次の問題へ（リセット）</button>
+            <div>④ 次の問題へ（QR画面に戻る）</div>
+            <button class="ctrl-btn bg-blue" onclick="nextQuestion()">次の問題へ</button>
         </div>
         <div class="panel"><button class="ctrl-btn bg-gray" onclick="fullReset()">全員の点数を消去</button></div>
     </div>
@@ -214,18 +225,15 @@
 
     // ▼▼▼ ここを自分のFirebase設定に書き換えてください ▼▼▼
     const firebaseConfig = {
-        apiKey: "AIzaSyCd7uPG-MIIqTsDEZ4kvWujNLoX3myfLJc",
-        authDomain: "kaitou-app.firebaseapp.com",
-        databaseURL: "https://kaitou-app-default-rtdb.firebaseio.com",
-        projectId: "kaitou-app",
-        storageBucket: "kaitou-app.firebasestorage.app",
-        messagingSenderId: "357091167079",
-        appId: "1:357091167079:web:87573b9fc29060173afdc2",
-        measurementId: "G-WY7FCBN4JJ"
+        apiKey: "AIzaSyB...",
+        authDomain: "your-project.firebaseapp.com",
+        databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+        projectId: "your-project",
+        storageBucket: "your-project.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:..."
     };
-
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -237,7 +245,6 @@
         myId = 'u_' + Date.now() + Math.floor(Math.random()*999);
         localStorage.setItem('sankan_uid', myId);
     }
-    // 自分が最後に選んだ答えを記憶
     let myLastChoice = 0; 
 
     if (role === 'host') initHost();
@@ -252,7 +259,6 @@
         const sndPinpon = new Audio('./pinpon.mp3');
         const sndGakkari = new Audio('./gakkari.mp3');
 
-        // 音声アンロック
         const unlockAudio = () => {
             sndPinpon.volume = 0; sndGakkari.volume = 0; 
             sndPinpon.play().then(() => { sndPinpon.pause(); sndPinpon.currentTime=0; sndPinpon.volume=1; });
@@ -265,39 +271,30 @@
             showVoteScreen(savedName);
         }
 
-        // ★★★ 判定ロジック ★★★
         let lastSfxTime = 0;
         onValue(ref(db, 'state/result'), (snap) => {
             const val = snap.val();
-            // 新しい結果発表があり、かつ最近(5秒以内)の場合のみ
             if(val && val.t > lastSfxTime) {
                 lastSfxTime = val.t;
                 if(Date.now() - val.t < 5000) {
                     const overlay = document.getElementById('result-overlay');
                     const icon = document.getElementById('res-icon');
                     const txt = document.getElementById('res-msg');
-                    
                     overlay.classList.remove('hidden');
-                    
                     if (myLastChoice === val.ans) {
-                        // 正解！
                         icon.innerHTML = "⭕"; icon.className = "result-text res-ok";
                         txt.innerText = "せいかい！";
                         sndPinpon.currentTime = 0; sndPinpon.play();
                     } else {
-                        // 不正解...
                         icon.innerHTML = "✖"; icon.className = "result-text res-ng";
                         txt.innerText = "ざんねん...";
                         sndGakkari.currentTime = 0; sndGakkari.play();
                     }
-                    
-                    // 3秒後に消す
                     setTimeout(() => { overlay.classList.add('hidden'); }, 4000);
                 }
             }
         });
 
-        // 強制効果音（テスト用）
         let lastTestTime = 0;
         onValue(ref(db, 'state/sfx'), (snap) => {
             const val = snap.val();
@@ -317,14 +314,14 @@
             if (st.status === 'open') {
                 btns.forEach(b => b.disabled = false);
                 msg.innerText = "答えを選んでね！";
-                // 選択状態解除
                 btns.forEach(b => b.classList.remove('selected'));
                 myLastChoice = 0;
-                document.getElementById('result-overlay').classList.add('hidden'); // 結果も消す
+                document.getElementById('result-overlay').classList.add('hidden');
             } else {
                 btns.forEach(b => b.disabled = true);
                 if(st.status === 'ranking') msg.innerText = "結果発表中...";
-                else msg.innerText = "先生の合図を待ってね";
+                else if(st.status === 'waiting') msg.innerText = "先生の合図を待ってね";
+                else msg.innerText = "締め切り！";
             }
         });
 
@@ -344,14 +341,11 @@
         document.getElementById('disp-name').innerText = name;
         update(ref(db, 'users/' + myId), { name: name });
     }
-    
     window.submitVote = (c) => {
-        myLastChoice = c; // 自分の答えを記憶
+        myLastChoice = c;
         document.getElementById('client-msg').innerText = `${c}番を選んだよ`;
-        // UI更新（選んだボタンを目立たせる）
         document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
         document.getElementById(`vbtn-${c}`).classList.add('selected');
-        
         set(ref(db, 'votes/' + myId), c);
     };
 
@@ -361,7 +355,8 @@
     function initHost() {
         document.getElementById('host-view').classList.remove('hidden');
         const clientUrl = window.location.href.split('?')[0]; 
-        new QRCode(document.getElementById("qrcode"), { text: clientUrl, width: 250, height: 250 });
+        // QRコードを大きく作成
+        new QRCode(document.getElementById("qrcode"), { text: clientUrl, width: 300, height: 300 });
 
         onValue(ref(db, 'votes'), (snap) => {
             const votes = snap.val() || {};
@@ -375,16 +370,25 @@
             }
         });
 
+        // 画面切り替えロジック
         onValue(ref(db, 'state/status'), (snap) => {
-            const s = snap.val();
-            const graph = document.getElementById('graph-screen');
-            const rank = document.getElementById('ranking-screen');
-            const title = document.getElementById('host-title');
-            if(s === 'ranking') {
-                graph.classList.add('hidden'); rank.classList.remove('hidden'); title.innerText = "ランキング発表！";
+            const s = snap.val() || 'waiting'; // デフォルトはwaiting
+            const scrQr = document.getElementById('screen-qr');
+            const scrGraph = document.getElementById('screen-graph');
+            const scrRank = document.getElementById('screen-ranking');
+
+            // 全部消す
+            scrQr.classList.add('hidden');
+            scrGraph.classList.add('hidden');
+            scrRank.classList.add('hidden');
+
+            if(s === 'waiting') {
+                scrQr.classList.remove('hidden'); // 待機中＝QR
+            } else if(s === 'ranking') {
+                scrRank.classList.remove('hidden'); // 結果＝ランキング
                 updateRanking();
             } else {
-                graph.classList.remove('hidden'); rank.classList.add('hidden'); title.innerText = "みんなの答え";
+                scrGraph.classList.remove('hidden'); // 投票中(open)・締切(closed)＝グラフ
             }
         });
     }
@@ -415,14 +419,9 @@
 
     window.calcScore = async (correctAnswer) => {
         if(!confirm(`正解は【 ${correctAnswer}番 】ですか？`)) return;
-        
-        // 1. 締め切る
         await update(ref(db, 'state'), { status: 'closed' });
-
-        // 2. 正解発表シグナルを送る（これでClientが一斉に判定＆音出し）
         await update(ref(db, 'state/result'), { ans: correctAnswer, t: Date.now() });
 
-        // 3. 点数計算
         const votesSnap = await get(ref(db, 'votes'));
         const usersSnap = await get(ref(db, 'users'));
         const votes = votesSnap.val() || {};
@@ -434,14 +433,13 @@
             }
         });
         if(Object.keys(updates).length > 0) await update(ref(db), updates);
-        
-        // 4. 黒板をランキングへ
         await update(ref(db, 'state'), { status: 'ranking' });
     };
     
     window.nextQuestion = () => {
         if(confirm("次の問題へ進みますか？")) {
             set(ref(db, 'votes'), {});
+            // ここで 'waiting' に戻すことで、自動的にQR画面に戻ります
             update(ref(db, 'state'), { status: 'waiting' });
         }
     };
