@@ -320,23 +320,22 @@
             const msg = document.getElementById('client-msg');
         
             if (st.status === 'open') {
-                // 【修正ポイント】投票スタートになったら、ボタンを活性化し、かつ「選択状態（白い枠）」を全部消す
                 btns.forEach(b => {
                     b.disabled = false;
-                    b.classList.remove('selected'); // ← ここで白い枠をリセット
+                    b.classList.remove('selected'); // ★次の問題で白い枠を消す
                 });
                 msg.innerText = "答えを選んでね！";
-                myLastChoice = 0; // 内部的な選択記録もリセット
+                myLastChoice = 0; // 自分の選択記録もリセット
                 document.getElementById('result-overlay').classList.add('hidden');
             } else {
                 btns.forEach(b => b.disabled = true);
                 if(st.status === 'ranking') msg.innerText = "結果発表中...";
                 else if(st.status === 'waiting') {
                     msg.innerText = "先生の合図を待ってね";
-                    // 待機中も選択をリセットしておく
-                    btns.forEach(b => b.classList.remove('selected'));
+                    btns.forEach(b => b.classList.remove('selected')); // 待機中も消す
+                } else {
+                    msg.innerText = "締め切り！";
                 }
-                else msg.innerText = "締め切り！";
             }
         });
 
@@ -435,20 +434,31 @@
     window.calcScore = async (correctAnswer) => {
         if(!confirm(`正解は【 ${correctAnswer}番 】ですか？`)) return;
         
+        // 1. 投票を締め切る
         await update(ref(db, 'state'), { status: 'closed' });
+    
+        // ★重要：ここにあった playSfx('pinpon') を削除しました！
+    
+        // 2. 正解発表シグナルを送る
         await update(ref(db, 'state/result'), { ans: correctAnswer, t: Date.now() });
-
+    
+        // 3. 点数計算
         const votesSnap = await get(ref(db, 'votes'));
         const usersSnap = await get(ref(db, 'users'));
         const votes = votesSnap.val() || {};
         const users = usersSnap.val() || {};
-        
         let updates = {};
         Object.keys(votes).forEach(uid => {
-            if(votes[uid] === correctAnswer) {
+            // Firebaseのデータと確実に比較するため == を使用
+            if(votes[uid] == correctAnswer) {
                 updates[`users/${uid}/score`] = (users[uid]?.score || 0) + 1;
             }
         });
+        if(Object.keys(updates).length > 0) await update(ref(db), updates);
+        
+        // 4. ランキング表示へ
+        await update(ref(db, 'state'), { status: 'ranking' });
+    };
         
         if(Object.keys(updates).length > 0) await update(ref(db), updates);
         
@@ -472,4 +482,5 @@
 </script>
 </body>
 </html>
+
 
