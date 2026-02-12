@@ -313,29 +313,21 @@
             }
         });
 
-        // --- Client側の状態監視部分を修正 ---
         onValue(ref(db, 'state'), (snap) => {
             const st = snap.val() || {};
             const btns = document.querySelectorAll('.vote-btn');
             const msg = document.getElementById('client-msg');
-        
             if (st.status === 'open') {
-                btns.forEach(b => {
-                    b.disabled = false;
-                    b.classList.remove('selected'); // ★次の問題で白い枠を消す
-                });
+                btns.forEach(b => b.disabled = false);
                 msg.innerText = "答えを選んでね！";
-                myLastChoice = 0; // 自分の選択記録もリセット
+                btns.forEach(b => b.classList.remove('selected'));
+                myLastChoice = 0;
                 document.getElementById('result-overlay').classList.add('hidden');
             } else {
                 btns.forEach(b => b.disabled = true);
                 if(st.status === 'ranking') msg.innerText = "結果発表中...";
-                else if(st.status === 'waiting') {
-                    msg.innerText = "先生の合図を待ってね";
-                    btns.forEach(b => b.classList.remove('selected')); // 待機中も消す
-                } else {
-                    msg.innerText = "締め切り！";
-                }
+                else if(st.status === 'waiting') msg.innerText = "先生の合図を待ってね";
+                else msg.innerText = "締め切り！";
             }
         });
 
@@ -434,31 +426,20 @@
     window.calcScore = async (correctAnswer) => {
         if(!confirm(`正解は【 ${correctAnswer}番 】ですか？`)) return;
         
-        // 1. 投票を締め切る
         await update(ref(db, 'state'), { status: 'closed' });
-    
-        // ★重要：ここにあった playSfx('pinpon') を削除しました！
-    
-        // 2. 正解発表シグナルを送る
         await update(ref(db, 'state/result'), { ans: correctAnswer, t: Date.now() });
-    
-        // 3. 点数計算
+
         const votesSnap = await get(ref(db, 'votes'));
         const usersSnap = await get(ref(db, 'users'));
         const votes = votesSnap.val() || {};
         const users = usersSnap.val() || {};
+        
         let updates = {};
         Object.keys(votes).forEach(uid => {
-            // Firebaseのデータと確実に比較するため == を使用
-            if(votes[uid] == correctAnswer) {
+            if(votes[uid] === correctAnswer) {
                 updates[`users/${uid}/score`] = (users[uid]?.score || 0) + 1;
             }
         });
-        if(Object.keys(updates).length > 0) await update(ref(db), updates);
-        
-        // 4. ランキング表示へ
-        await update(ref(db, 'state'), { status: 'ranking' });
-    };
         
         if(Object.keys(updates).length > 0) await update(ref(db), updates);
         
@@ -482,6 +463,3 @@
 </script>
 </body>
 </html>
-
-
-
